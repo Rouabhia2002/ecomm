@@ -1,72 +1,64 @@
-import { createContext, useContext, useState } from "react";
-import { useLocalStorage } from "../src/hooks/useLocalStorage";
+import React, { createContext, useContext, useState } from "react";
+import ShoppingCart from "../src/components/ShoppingCart";
 
 const ShoppingCartContext = createContext({});
 
-//usecontext
 export function useShoppingCart() {
   return useContext(ShoppingCartContext);
 }
 
-
-
 export function ShoppingCartProvider({ children }) {
 
-  const [isOpen, setIsOpen] = useState(false);
-  const [cartItems, setCartItems] = useLocalStorage(
-    "shopping-cart",
-    []
-  );
+  const [isOpen, setIsOpen] = useState(false)
+  const [cartItems, setCartItems] = useState([]);
 
   const cartQuantity = cartItems.reduce(
     (quantity, item) => item.quantity + quantity,
     0
-  );
-
-  const openCart = () => setIsOpen(true);
-  const closeCart = () => setIsOpen(false);
+  )
+  
+  const openCart = () => setIsOpen(true)
+  const closeCart = () => setIsOpen(false)
 
   function getItemQuantity(id) {
-    return cartItems.find(item => item.id === id)?.quantity || 0;
+    const item = cartItems.find((item) => item.id === id);
+    return item ? item.quantity : 0;
   }
 
   function increaseCartQuantity(id) {
-    setCartItems(currItems => {
-      if (currItems.find(item => item.id === id) == null) {
-        return [...currItems, { id, quantity: 1 }];
+    setCartItems((prevItems) => {
+      const itemIndex = prevItems.findIndex((item) => item.id === id);
+      if (itemIndex !== -1) {
+        const updatedItems = [...prevItems];
+        updatedItems[itemIndex].quantity += 1;
+        return updatedItems;
       } else {
-        return currItems.map(item => {
-          if (item.id === id) {
-            return { ...item, quantity: item.quantity + 1 };
-          } else {
-            return item;
-          }
-        });
+        return [...prevItems, { id, quantity: 1 }];
       }
     });
   }
 
   function decreaseCartQuantity(id) {
-    setCartItems(currItems => {
-      if (currItems.find(item => item.id === id)?.quantity === 1) {
-        return currItems.filter(item => item.id !== id);
-      } else {
-        return currItems.map(item => {
-          if (item.id === id) {
-            return { ...item, quantity: item.quantity - 1 };
-          } else {
-            return item;
-          }
-        });
+    setCartItems((prevItems) => {
+      const itemIndex = prevItems.findIndex((item) => item.id === id);
+      if (itemIndex !== -1) {
+        const updatedItems = [...prevItems];
+        if (updatedItems[itemIndex].quantity > 1) {
+          updatedItems[itemIndex].quantity -= 1;
+        } else {
+          updatedItems.splice(itemIndex, 1);
+        }
+        return updatedItems;
       }
+      return prevItems;
     });
   }
 
   function removeFromCart(id) {
-    setCartItems(currItems => {
-      return currItems.filter(item => item.id !== id);
-    });
+    setCartItems((prevItems) => prevItems.filter((item) => item.id !== id));
   }
+
+  //console.log("cartItems after increaseCartQuantity:", cartItems); // Log cartItems after calling increaseCartQuantity
 
   return (
     <ShoppingCartContext.Provider
@@ -75,10 +67,10 @@ export function ShoppingCartProvider({ children }) {
         increaseCartQuantity,
         decreaseCartQuantity,
         removeFromCart,
-        openCart,
-        closeCart,
-        cartItems,
         cartQuantity,
+        openCart,
+        cartItems,
+        closeCart,
       }}
     >
       {children}
